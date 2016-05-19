@@ -1,20 +1,33 @@
 'use strict'
 
 let INVALID_CONTENT_TYPE = '{"status":"fail","message":"Not Acceptable request, content type will be application/json."}'
+  , INVALID_PARAM_VALUE = '{"status":"fail","message":"Invalid parameter."}'
   , baseApiPath = null
   ;
+
+
+function isValidRequest(req) {
+  return (/application\/json/.test(req.get('content-type').toLowerCase()));
+}
 
 function apiGet(req, res) {
     let tplName = req.params.url;
     let request_path = tplName.split("/");
     let resource = request_path[0];
     let object_id = request_path[1];
-    this.storage.list(resource, {_id: object_id}, function(list){
+    let filter = null;
+    if(!!object_id){
+        filter = {_id: object_id};
+    }
+    this.storage.list(resource, filter, function(list){
         res.send(JSON.stringify(list, null, 4));
     });
 }
 
 function apiPost(req, res) {
+    if (!isValidRequest(req)) {
+      return res.status(406).end(INVALID_CONTENT_TYPE);
+    }
     let tplName = req.params.url;
     let request_path = tplName.split("/");
     let resource = request_path[0];
@@ -24,21 +37,35 @@ function apiPost(req, res) {
 }
 
 function apiPut(req, res) {
+    if (!isValidRequest(req)) {
+      return res.status(406).end(INVALID_CONTENT_TYPE);
+    }
     let tplName = req.params.url;
     let request_path = tplName.split("/");
     let resource = request_path[0];
     let object_id = request_path[1];
-    this.storage.update(resource, {_id: object_id}, req.body, function(updateData){
+    if(!object_id){
+        return res.status(412).end(INVALID_PARAM_VALUE);
+    }
+    let filter = {_id: object_id};
+    this.storage.update(resource, filter, req.body, function(updateData){
         res.send(JSON.stringify(updateData, null, 4));
     });
 }
 
 function apiDelete(req, res) {
+    if (!isValidRequest(req)) {
+      return res.status(406).end(INVALID_CONTENT_TYPE);
+    }
     let tplName = req.params.url;
     let request_path = tplName.split("/");
     let resource = request_path[0];
     let object_id = request_path[1];
-    this.storage.remove(resource, {_id: object_id}, function(deleted){
+    if(!object_id){
+        return res.status(412).end(INVALID_PARAM_VALUE);
+    }
+    let filter = {_id: object_id};
+    this.storage.remove(resource, filter, function(deleted){
         res.send(JSON.stringify(deleted, null, 4));
     });
 }
